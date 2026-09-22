@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">Berean Bible</string>
+    <string name="change_book">Cambiar libro</string>
+    <string name="previous_chapter">&lt; Anterior</string>
+    <string name="next_chapter">Siguiente &gt;</string>
+    <string name="placeholder_text">Texto aún não incluido en esta muestra del MVP. Reemplace los datos de ejemplo por una traducción licenciada. Aún pode navegar entre libros/capítulos normalmente.</string>
+    <string name="chapter_label">Capítulo %1$d</string>
+    <string name="search_hint">Buscar en la Biblia (mín. 3 letras)</string>
+    <string name="no_results">Ningún resultado (recuerde: los textos son marcadores de posición en esta muestra).</string>
+    <string name="sermon_mode">Modo Predicación / Escuchar</string>
+    <string name="audio_privacy_notice">El audio se procesa en el dispositivo. Ninguna grabación se envía a servidores externos.</string>
+    <string name="state_label">Estado: %1$s</string>
+    <string name="heard_label">Escuchado: \"%1$s\"</string>
+    <string name="stop_listening">Detener escucha</string>
+    <string name="start_listening">Iniciar escucha</string>
+    <string name="test_input_label">Entrada de prueba (reemplaza el micrófono durante el desarrollo):</string>
+    <string name="test_input_hint">Ej: Vamos a abrir en Juan capítulo 3 versículo 16</string>
+    <string name="simulate_speech">Simular habla</string>
+    <string name="detected_suffix">detectado</string>
+    <string name="snippet_label">Fragmento: \"%1$s\"</string>
+    <string name="open_passage">Abrir pasaje</string>
+    <string name="ignore_label">Ignorar</string>
+    <string name="session_history">Historial de la sesión</string>
+    <string name="settings_label">Configuraciones</string>
+    <string name="nav_mode_label">Navegación al detectar referencia</string>
+    <string name="confirm_before_open">Preguntar antes de abrir</string>
+    <string name="auto_open">Abrir automáticamente</string>
+    <string name="interface_language">Idioma de la aplicación y reconocimiento</string>
+    <string name="lang_portuguese">Português</string>
+    <string name="lang_spanish">Español</string>
+    <string name="use_fake_stt">Usar entrada de texto simulada (modo desarrollador)</string>
+</resources>

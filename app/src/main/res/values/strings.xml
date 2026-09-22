@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">Bíblia Bereana</string>
+    <string name="change_book">Trocar livro</string>
+    <string name="previous_chapter">&lt; Anterior</string>
+    <string name="next_chapter">Próximo &gt;</string>
+    <string name="placeholder_text">Texto ainda não incluído nesta amostra do MVP. Substitua os dados de exemplo por uma tradução licenciada. Você ainda pode navegar entre livros/capítulos normalmente.</string>
+    <string name="chapter_label">Capítulo %1$d</string>
+    <string name="search_hint">Buscar na Bíblia (mín. 3 letras)</string>
+    <string name="no_results">Nenhum resultado (lembre-se: os textos são placeholders nesta amostra).</string>
+    <string name="sermon_mode">Modo Pregação / Escutar</string>
+    <string name="audio_privacy_notice">O áudio é processado no dispositivo. Nenhuma gravação é enviada a servidores externos.</string>
+    <string name="state_label">Estado: %1$s</string>
+    <string name="heard_label">Ouvido: \"%1$s\"</string>
+    <string name="stop_listening">Parar escuta</string>
+    <string name="start_listening">Iniciar escuta</string>
+    <string name="test_input_label">Entrada de teste (substitui o microfone durante o desenvolvimento):</string>
+    <string name="test_input_hint">Ex.: Vamos abrir em João capítulo 3 versículo 16</string>
+    <string name="simulate_speech">Simular fala</string>
+    <string name="detected_suffix">detectado</string>
+    <string name="snippet_label">Trecho: \"%1$s\"</string>
+    <string name="open_passage">Abrir passagem</string>
+    <string name="ignore_label">Ignorar</string>
+    <string name="session_history">Histórico da sessão</string>
+    <string name="settings_label">Configurações</string>
+    <string name="nav_mode_label">Navegação ao detectar referência</string>
+    <string name="confirm_before_open">Perguntar antes de abrir</string>
+    <string name="auto_open">Abrir automaticamente</string>
+    <string name="interface_language">Idioma do app e reconhecimento</string>
+    <string name="lang_portuguese">Português</string>
+    <string name="lang_spanish">Español</string>
+    <string name="use_fake_stt">Usar entrada de texto simulada (modo desenvolvedor)</string>
+</resources>
