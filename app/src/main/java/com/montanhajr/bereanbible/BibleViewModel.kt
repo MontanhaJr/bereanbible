@@ -11,8 +11,8 @@ import kotlinx.coroutines.launch
 
 class BibleViewModel(application: Application) : AndroidViewModel(application) {
 
-    val repository: BibleRepository = InMemoryBibleRepository()
     val settings = SettingsRepository(application)
+    val repository: BibleRepository = MultiLanguageBibleRepository(application, settings)
     val sessionManager = SermonSessionManager()
 
     private var sttEngine: SpeechToTextEngine? = null

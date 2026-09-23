@@ -22,6 +22,31 @@ class InMemoryBibleRepository : BibleRepository {
         BibleData.VERSES.filter { it.text.contains(query, ignoreCase = true) }
 }
 
+class MultiLanguageBibleRepository(
+    context: Context,
+    private val settingsRepository: SettingsRepository
+) : BibleRepository {
+
+    private val spanishRepository = SqliteBibleRepository(context)
+    private val inMemoryRepository = InMemoryBibleRepository()
+
+    private val currentRepository: BibleRepository
+        get() = when (settingsRepository.appLanguage.value) {
+            AppLanguage.SPANISH -> spanishRepository
+            else -> inMemoryRepository
+        }
+
+    override fun getBooks(): List<BibleBook> = currentRepository.getBooks()
+
+    override fun getBook(id: String): BibleBook? = currentRepository.getBook(id)
+
+    override fun getChapter(bookId: String, chapter: Int): List<BibleVerse> =
+        currentRepository.getChapter(bookId, chapter)
+
+    override fun searchText(query: String): List<BibleVerse> =
+        currentRepository.searchText(query)
+}
+
 class SettingsRepository(context: Context) {
 
     private val prefs = context.getSharedPreferences("biblia_pregacao_settings", Context.MODE_PRIVATE)
