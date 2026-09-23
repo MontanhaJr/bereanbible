@@ -27,6 +27,9 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentChapter = MutableStateFlow(3)
     val currentChapter: StateFlow<Int> = _currentChapter.asStateFlow()
 
+    private val _targetVerse = MutableStateFlow<Int?>(1)
+    val targetVerse: StateFlow<Int?> = _targetVerse.asStateFlow()
+
     private val _isListening = MutableStateFlow(false)
     val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
 
@@ -49,9 +52,10 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
     private val transcriptHistory = mutableListOf<String>()
     private var lastProcessedFinalTranscript = ""
 
-    fun openReference(bookId: String, chapter: Int) {
+    fun openReference(bookId: String, chapter: Int, verse: Int? = 1) {
         _currentBookId.value = bookId
         _currentChapter.value = chapter
+        _targetVerse.value = verse
     }
 
     fun onSearchQueryChange(query: String) {
@@ -114,7 +118,8 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
         // Processamos todas as referências encontradas (o Deduplicator evita repetições)
         matches.forEach { match ->
             val isCurrent = match.reference.bookId == _currentBookId.value && 
-                           match.reference.chapter == _currentChapter.value
+                           match.reference.chapter == _currentChapter.value &&
+                           match.reference.startVerse == _targetVerse.value
             
             if (!isCurrent && sessionManager.shouldSuggest(match.reference)) {
                 processDetection(match)
@@ -143,7 +148,7 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
 
     fun acceptSuggestion(match: DetectedReference? = _suggestion.value) {
         val target = match ?: return
-        openReference(target.reference.bookId, target.reference.chapter)
+        openReference(target.reference.bookId, target.reference.chapter, target.reference.startVerse)
         sessionManager.recordDecision(target.reference, displayReference(target.reference), accepted = true)
         _suggestion.value = null
         _detectionState.value = if (_isListening.value) DetectionState.LISTENING else DetectionState.IDLE

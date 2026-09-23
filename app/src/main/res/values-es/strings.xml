@@ -29,4 +29,7 @@
     <string name="lang_portuguese">Português</string>
     <string name="lang_spanish">Español</string>
     <string name="use_fake_stt">Usar entrada de texto simulada (modo desarrollador)</string>
+    <string name="listening_active">Escuchando...</string>
+    <string name="waiting_reference">Esperando cita bíblica...</string>
+    <string name="go_to_verse">Ir al versículo</string>
 </resources>
