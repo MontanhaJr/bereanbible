@@ -48,9 +48,7 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
     private val _lastHeard = MutableStateFlow("")
     val lastHeard: StateFlow<String> = _lastHeard.asStateFlow()
 
-    // Histórico recente para contexto de detecção (ajuda a pegar referências cortadas por pausas)
-    private val transcriptHistory = mutableListOf<String>()
-    private var lastProcessedFinalTranscript = ""
+    private var previousTranscript = ""
 
     fun openReference(bookId: String, chapter: Int, verse: Int? = 1) {
         _currentBookId.value = bookId
@@ -69,6 +67,7 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
 
     fun startListening() {
         sessionManager.startSession()
+        previousTranscript = ""
         _isListening.value = true
         _detectionState.value = DetectionState.LISTENING
 
@@ -85,6 +84,7 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun stopListening() {
+        previousTranscript = ""
         _isListening.value = false
         _detectionState.value = DetectionState.IDLE
         sttEngine?.stop()
@@ -97,23 +97,17 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun onTranscript(text: String) {
         _lastHeard.value = text
-        // Combinamos o histórico recente com o que acabou de ser ouvido
-        // Isso permite detectar referências como "João [pausa] 3:16"
-        val fullText = (transcriptHistory + text).joinToString(" ")
-        
-        Log.d("BibleViewModel", "onTranscript full: $fullText")
-        _detectionState.value = DetectionState.TRANSCRIBING
-        
-        val matches = ExplicitBibleReferenceDetector.detect(fullText, language = settings.appLanguage.value)
-        Log.d("BibleViewModel", "Matches found: ${matches.size}")
 
-        // Se o texto atual for muito diferente do último processado, 
-        // consideramos que o SpeechRecognizer fechou um bloco (final result)
-        if (text != lastProcessedFinalTranscript && lastProcessedFinalTranscript.isNotEmpty() && !text.startsWith(lastProcessedFinalTranscript)) {
-            transcriptHistory.add(lastProcessedFinalTranscript)
-            if (transcriptHistory.size > 5) transcriptHistory.removeAt(0)
-        }
-        lastProcessedFinalTranscript = text
+        val delta = calculateDelta(current = text, previous = previousTranscript)
+        previousTranscript = text
+
+        if (delta.isBlank()) return
+
+        Log.d("BibleViewModel", "onTranscript delta: '$delta'")
+        _detectionState.value = DetectionState.TRANSCRIBING
+
+        val matches = ExplicitBibleReferenceDetector.detect(delta, language = settings.appLanguage.value)
+        Log.d("BibleViewModel", "Matches found: ${matches.size}")
 
         // Processamos todas as referências encontradas (o Deduplicator evita repetições)
         matches.forEach { match ->
@@ -129,6 +123,21 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
         if (_suggestion.value == null) {
             _detectionState.value = DetectionState.LISTENING
         }
+    }
+
+    private fun calculateDelta(current: String, previous: String): String {
+        val currNorm = current.replace(Regex("\\s+"), " ").trim()
+        val prevNorm = previous.replace(Regex("\\s+"), " ").trim()
+
+        if (prevNorm.isEmpty()) {
+            return currNorm
+        }
+
+        if (currNorm.startsWith(prevNorm, ignoreCase = true)) {
+            return currNorm.substring(prevNorm.length).trim()
+        }
+
+        return currNorm
     }
 
     private fun processDetection(match: DetectedReference) {

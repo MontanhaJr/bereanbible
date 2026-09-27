@@ -88,6 +88,7 @@ class SermonSessionManager {
     val history: StateFlow<List<SermonHistoryEntry>> = _history.asStateFlow()
 
     fun startSession() {
+        ExplicitBibleReferenceDetector.resetSession()
         _history.value = emptyList()
     }
 
