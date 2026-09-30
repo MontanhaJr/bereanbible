@@ -66,6 +66,8 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startListening() {
+        sttEngine?.stop()
+
         sessionManager.startSession()
         previousTranscript = ""
         _isListening.value = true
@@ -79,6 +81,12 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             engine.transcript.collect { text ->
                 if (text.isNotBlank()) onTranscript(text)
+            }
+        }
+
+        viewModelScope.launch {
+            engine.partialTranscript.collect { text ->
+                if (text.isNotBlank()) _lastHeard.value = text
             }
         }
     }

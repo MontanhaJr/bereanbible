@@ -82,13 +82,14 @@ class SettingsRepository(context: Context) {
 
 class SermonSessionManager {
 
-    private val deduplicator = DetectionDeduplicator()
+    private var deduplicator = DetectionDeduplicator()
 
     private val _history = MutableStateFlow<List<SermonHistoryEntry>>(emptyList())
     val history: StateFlow<List<SermonHistoryEntry>> = _history.asStateFlow()
 
     fun startSession() {
         ExplicitBibleReferenceDetector.resetSession()
+        deduplicator = DetectionDeduplicator()
         _history.value = emptyList()
     }
 

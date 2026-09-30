@@ -15,6 +15,7 @@ interface SpeechToTextEngine {
     fun start(language: AppLanguage = AppLanguage.PORTUGUESE)
     fun stop()
     val transcript: StateFlow<String>
+    val partialTranscript: StateFlow<String>
     val isListening: StateFlow<Boolean>
 }
 
@@ -22,6 +23,9 @@ interface SpeechToTextEngine {
 class FakeSpeechToTextEngine : SpeechToTextEngine {
     private val _transcript = MutableStateFlow("")
     override val transcript: StateFlow<String> = _transcript.asStateFlow()
+
+    private val _partialTranscript = MutableStateFlow("")
+    override val partialTranscript: StateFlow<String> = _partialTranscript.asStateFlow()
 
     private val _isListening = MutableStateFlow(false)
     override val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
@@ -35,6 +39,7 @@ class FakeSpeechToTextEngine : SpeechToTextEngine {
     }
 
     fun submit(text: String) {
+        _partialTranscript.value = text
         _transcript.value = text
     }
 }
@@ -54,6 +59,9 @@ class AndroidSpeechRecognizerEngine(private val context: Context) : SpeechToText
 
     private val _transcript = MutableStateFlow("")
     override val transcript: StateFlow<String> = _transcript.asStateFlow()
+
+    private val _partialTranscript = MutableStateFlow("")
+    override val partialTranscript: StateFlow<String> = _partialTranscript.asStateFlow()
 
     private val _isListening = MutableStateFlow(false)
     override val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
@@ -87,7 +95,10 @@ class AndroidSpeechRecognizerEngine(private val context: Context) : SpeechToText
                 ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 ?.firstOrNull()
             Log.d(TAG, "onResults: $text")
-            if (!text.isNullOrBlank()) _transcript.value = text
+            if (!text.isNullOrBlank()) {
+                _partialTranscript.value = text
+                _transcript.value = text
+            }
             if (_isListening.value) restart()
         }
 
@@ -96,7 +107,10 @@ class AndroidSpeechRecognizerEngine(private val context: Context) : SpeechToText
                 ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 ?.firstOrNull()
             Log.d(TAG, "onPartialResults: $text")
-            if (!text.isNullOrBlank()) _transcript.value = text
+            if (!text.isNullOrBlank()) {
+                _partialTranscript.value = text
+                _transcript.value = text
+            }
         }
         override fun onEvent(eventType: Int, params: Bundle?) {}
     }
