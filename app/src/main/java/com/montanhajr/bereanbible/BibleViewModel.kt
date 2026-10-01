@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,9 +15,11 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
     val settings = SettingsRepository(application)
     val repository: BibleRepository = MultiLanguageBibleRepository(application, settings)
     val sessionManager = SermonSessionManager()
+    val whisperModels = WhisperModelStore(application)
 
     private var sttEngine: SpeechToTextEngine? = null
     private val fakeEngine = FakeSpeechToTextEngine()
+    private var listeningJobs: Job? = null
 
     private val _useFakeStt = MutableStateFlow(false) // Alterado para false por padrão para usar o microfone
     val useFakeStt: StateFlow<Boolean> = _useFakeStt.asStateFlow()
@@ -48,6 +51,9 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
     private val _lastHeard = MutableStateFlow("")
     val lastHeard: StateFlow<String> = _lastHeard.asStateFlow()
 
+    private val _sttError = MutableStateFlow<String?>(null)
+    val sttError: StateFlow<String?> = _sttError.asStateFlow()
+
     private var previousTranscript = ""
 
     fun openReference(bookId: String, chapter: Int, verse: Int? = 1) {
@@ -65,28 +71,58 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
         _useFakeStt.value = value
     }
 
+    fun downloadWhisperModel(kind: SpeechEngineKind) {
+        viewModelScope.launch { whisperModels.download(kind) }
+    }
+
+    fun deleteWhisperModel(kind: SpeechEngineKind) {
+        whisperModels.delete(kind)
+    }
+
     fun startListening() {
         sttEngine?.stop()
+        listeningJobs?.cancel()
 
         sessionManager.startSession()
         previousTranscript = ""
+        _sttError.value = null
         _isListening.value = true
         _detectionState.value = DetectionState.LISTENING
 
-        val engine: SpeechToTextEngine =
-            if (_useFakeStt.value) fakeEngine else AndroidSpeechRecognizerEngine(getApplication())
+        val selectedEngine = settings.speechEngine.value
+        val engine: SpeechToTextEngine = when {
+            _useFakeStt.value -> fakeEngine
+            selectedEngine.isWhisper -> {
+                if (!whisperModels.isReady(selectedEngine)) {
+                    _sttError.value = "Baixe o modelo Whisper nas configurações antes de escutar"
+                    _isListening.value = false
+                    _detectionState.value = DetectionState.IDLE
+                    return
+                }
+                SherpaWhisperEngine(whisperModels, selectedEngine)
+            }
+            else -> AndroidSpeechRecognizerEngine(getApplication())
+        }
         sttEngine = engine
         engine.start(settings.appLanguage.value)
 
-        viewModelScope.launch {
-            engine.transcript.collect { text ->
-                if (text.isNotBlank()) onTranscript(text)
+        listeningJobs = viewModelScope.launch {
+            launch {
+                engine.transcript.collect { text ->
+                    if (text.isNotBlank()) onTranscript(text)
+                }
             }
-        }
-
-        viewModelScope.launch {
-            engine.partialTranscript.collect { text ->
-                if (text.isNotBlank()) _lastHeard.value = text
+            launch {
+                engine.partialTranscript.collect { text ->
+                    if (text.isNotBlank()) _lastHeard.value = text
+                }
+            }
+            launch {
+                engine.lastError.collect { error ->
+                    if (!error.isNullOrBlank()) {
+                        _sttError.value = error
+                    }
+                }
             }
         }
     }
@@ -95,6 +131,8 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
         previousTranscript = ""
         _isListening.value = false
         _detectionState.value = DetectionState.IDLE
+        listeningJobs?.cancel()
+        listeningJobs = null
         sttEngine?.stop()
         sttEngine = null
     }

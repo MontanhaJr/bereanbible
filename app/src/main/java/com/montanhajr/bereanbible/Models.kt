@@ -15,6 +15,26 @@ enum class AppLanguage {
 enum class NavigationMode { CONFIRM_BEFORE_OPEN, AUTO_OPEN }
 
 /**
+ * Motor de STT escolhido nas configurações. O reconhecedor nativo do Android
+ * permanece disponível; as três opções Whisper usam o mesmo runtime sherpa-onnx
+ * com modelos multilíngues diferentes (tiny / base / small, int8, sem sufixo .en).
+ */
+enum class SpeechEngineKind {
+    ANDROID_SYSTEM,
+    WHISPER_TINY,
+    WHISPER_BASE,
+    WHISPER_SMALL;
+
+    val isWhisper: Boolean get() = this != ANDROID_SYSTEM
+
+    fun whisperLanguageCode(language: AppLanguage): String = when (language) {
+        AppLanguage.PORTUGUESE -> "pt"
+        AppLanguage.SPANISH -> "es"
+        AppLanguage.ENGLISH -> "en"
+    }
+}
+
+/**
  * Máquina de estados da detecção (ver seção 21 da especificação).
  * Nem todos os estados são usados de forma explícita neste MVP mínimo
  * (ACCEPTED/IGNORED são transitórios), mas ficam declarados para orientar

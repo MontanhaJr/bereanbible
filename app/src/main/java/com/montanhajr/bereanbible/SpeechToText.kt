@@ -17,6 +17,7 @@ interface SpeechToTextEngine {
     val transcript: StateFlow<String>
     val partialTranscript: StateFlow<String>
     val isListening: StateFlow<Boolean>
+    val lastError: StateFlow<String?>
 }
 
 /** Fonte de transcrição "fake": o desenvolvedor digita o texto em vez de falar. */
@@ -29,6 +30,9 @@ class FakeSpeechToTextEngine : SpeechToTextEngine {
 
     private val _isListening = MutableStateFlow(false)
     override val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
+
+    private val _lastError = MutableStateFlow<String?>(null)
+    override val lastError: StateFlow<String?> = _lastError.asStateFlow()
 
     override fun start(language: AppLanguage) {
         _isListening.value = true
@@ -65,6 +69,9 @@ class AndroidSpeechRecognizerEngine(private val context: Context) : SpeechToText
 
     private val _isListening = MutableStateFlow(false)
     override val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
+
+    private val _lastError = MutableStateFlow<String?>(null)
+    override val lastError: StateFlow<String?> = _lastError.asStateFlow()
 
     private val listener = object : RecognitionListener {
         override fun onReadyForSpeech(params: Bundle?) {
@@ -120,8 +127,10 @@ class AndroidSpeechRecognizerEngine(private val context: Context) : SpeechToText
         currentLanguage = language
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
             Log.e(TAG, "Speech recognition not available")
+            _lastError.value = "Reconhecimento de fala do sistema indisponível"
             return
         }
+        _lastError.value = null
         _isListening.value = true
         recognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
             setRecognitionListener(listener)

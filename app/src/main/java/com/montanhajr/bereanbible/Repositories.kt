@@ -71,9 +71,24 @@ class SettingsRepository(context: Context) {
         prefs.edit().putString(KEY_APP_LANGUAGE, language.name).apply()
     }
 
+    private val _speechEngine = MutableStateFlow(
+        runCatching {
+            SpeechEngineKind.valueOf(
+                prefs.getString(KEY_SPEECH_ENGINE, SpeechEngineKind.ANDROID_SYSTEM.name)!!
+            )
+        }.getOrDefault(SpeechEngineKind.ANDROID_SYSTEM)
+    )
+    val speechEngine: StateFlow<SpeechEngineKind> = _speechEngine.asStateFlow()
+
+    fun setSpeechEngine(kind: SpeechEngineKind) {
+        _speechEngine.value = kind
+        prefs.edit().putString(KEY_SPEECH_ENGINE, kind.name).apply()
+    }
+
     companion object {
         private const val KEY_NAV_MODE = "navigation_mode"
         private const val KEY_APP_LANGUAGE = "app_language"
+        private const val KEY_SPEECH_ENGINE = "speech_engine"
 
         /** Threshold inicial para o modo automático — deve ser calibrado em testes reais (seção 24.1). */
         const val AUTO_OPEN_CONFIDENCE_THRESHOLD = 0.8f

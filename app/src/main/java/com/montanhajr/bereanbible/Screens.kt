@@ -5,6 +5,9 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,6 +30,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -356,6 +360,14 @@ fun ListeningScreen(vm: BibleViewModel) {
         )
         Spacer(Modifier.height(4.dp))
         Text(stringResource(R.string.state_label, detectionState.name), style = MaterialTheme.typography.labelMedium)
+        val sttError by vm.sttError.collectAsState()
+        sttError?.let { error ->
+            Text(
+                stringResource(R.string.stt_error_label, error),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
 
         if (isListening && lastHeard.isNotEmpty()) {
             Card(
@@ -444,9 +456,17 @@ fun ListeningScreen(vm: BibleViewModel) {
 fun SettingsScreen(vm: BibleViewModel) {
     val navigationMode by vm.settings.navigationMode.collectAsState()
     val appLanguage by vm.settings.appLanguage.collectAsState()
+    val speechEngine by vm.settings.speechEngine.collectAsState()
     val useFake by vm.useFakeStt.collectAsState()
+    val whisperReady by vm.whisperModels.ready.collectAsState()
+    val downloadProgress by vm.whisperModels.progress.collectAsState()
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ) {
         Text(stringResource(R.string.settings_label), style = MaterialTheme.typography.headlineSmall)
 
         Spacer(Modifier.height(16.dp))
@@ -485,10 +505,130 @@ fun SettingsScreen(vm: BibleViewModel) {
         }
 
         Spacer(Modifier.height(16.dp))
+        Text(stringResource(R.string.speech_engine_label), style = MaterialTheme.typography.titleMedium)
+        Text(
+            stringResource(R.string.speech_engine_hint),
+            style = MaterialTheme.typography.bodySmall
+        )
+        Spacer(Modifier.height(8.dp))
+        SpeechEngineOption(
+            selected = speechEngine == SpeechEngineKind.ANDROID_SYSTEM,
+            title = stringResource(R.string.speech_engine_android),
+            hint = stringResource(R.string.speech_engine_android_hint),
+            onSelect = { vm.settings.setSpeechEngine(SpeechEngineKind.ANDROID_SYSTEM) }
+        )
+        WhisperEngineOption(
+            kind = SpeechEngineKind.WHISPER_TINY,
+            selected = speechEngine == SpeechEngineKind.WHISPER_TINY,
+            title = stringResource(R.string.speech_engine_whisper_tiny),
+            hint = stringResource(R.string.speech_engine_whisper_tiny_hint),
+            ready = SpeechEngineKind.WHISPER_TINY in whisperReady,
+            progress = downloadProgress,
+            onSelect = { vm.settings.setSpeechEngine(SpeechEngineKind.WHISPER_TINY) },
+            onDownload = { vm.downloadWhisperModel(SpeechEngineKind.WHISPER_TINY) },
+            onDelete = { vm.deleteWhisperModel(SpeechEngineKind.WHISPER_TINY) }
+        )
+        WhisperEngineOption(
+            kind = SpeechEngineKind.WHISPER_BASE,
+            selected = speechEngine == SpeechEngineKind.WHISPER_BASE,
+            title = stringResource(R.string.speech_engine_whisper_base),
+            hint = stringResource(R.string.speech_engine_whisper_base_hint),
+            ready = SpeechEngineKind.WHISPER_BASE in whisperReady,
+            progress = downloadProgress,
+            onSelect = { vm.settings.setSpeechEngine(SpeechEngineKind.WHISPER_BASE) },
+            onDownload = { vm.downloadWhisperModel(SpeechEngineKind.WHISPER_BASE) },
+            onDelete = { vm.deleteWhisperModel(SpeechEngineKind.WHISPER_BASE) }
+        )
+        WhisperEngineOption(
+            kind = SpeechEngineKind.WHISPER_SMALL,
+            selected = speechEngine == SpeechEngineKind.WHISPER_SMALL,
+            title = stringResource(R.string.speech_engine_whisper_small),
+            hint = stringResource(R.string.speech_engine_whisper_small_hint),
+            ready = SpeechEngineKind.WHISPER_SMALL in whisperReady,
+            progress = downloadProgress,
+            onSelect = { vm.settings.setSpeechEngine(SpeechEngineKind.WHISPER_SMALL) },
+            onDownload = { vm.downloadWhisperModel(SpeechEngineKind.WHISPER_SMALL) },
+            onDelete = { vm.deleteWhisperModel(SpeechEngineKind.WHISPER_SMALL) }
+        )
+        downloadProgress.error?.let { error ->
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.whisper_download_error, error),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Switch(checked = useFake, onCheckedChange = { vm.setUseFakeStt(it) })
             Spacer(Modifier.width(8.dp))
             Text(stringResource(R.string.use_fake_stt))
+        }
+    }
+}
+
+@Composable
+private fun SpeechEngineOption(
+    selected: Boolean,
+    title: String,
+    hint: String,
+    onSelect: () -> Unit,
+) {
+    Row(verticalAlignment = Alignment.Top) {
+        RadioButton(selected = selected, onClick = onSelect)
+        Column(Modifier.padding(top = 12.dp)) {
+            Text(title)
+            Text(hint, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+@Composable
+private fun WhisperEngineOption(
+    kind: SpeechEngineKind,
+    selected: Boolean,
+    title: String,
+    hint: String,
+    ready: Boolean,
+    progress: ModelDownloadProgress,
+    onSelect: () -> Unit,
+    onDownload: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val downloadingThis = progress.inProgress && progress.kind == kind
+    Column {
+        SpeechEngineOption(selected = selected, title = title, hint = hint, onSelect = onSelect)
+        Row(
+            Modifier.padding(start = 48.dp, bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            when {
+                downloadingThis -> {
+                    Text(
+                        stringResource(R.string.whisper_downloading, (progress.fraction * 100).toInt()),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                ready -> {
+                    Text(stringResource(R.string.whisper_ready), style = MaterialTheme.typography.bodySmall)
+                    TextButton(onClick = onDelete) { Text(stringResource(R.string.whisper_delete)) }
+                }
+                else -> {
+                    OutlinedButton(onClick = onDownload, enabled = !progress.inProgress) {
+                        Text(stringResource(R.string.whisper_download))
+                    }
+                }
+            }
+        }
+        if (downloadingThis) {
+            LinearProgressIndicator(
+                progress = { progress.fraction },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 48.dp, bottom = 8.dp)
+            )
         }
     }
 }
