@@ -103,10 +103,10 @@ class SherpaWhisperEngine(
                 sileroVadModelConfig = SileroVadModelConfig(
                     model = modelStore.vadPath(),
                     threshold = 0.5f,
-                    minSilenceDuration = 0.8f,
+                    minSilenceDuration = 0.5f,
                     minSpeechDuration = 0.25f,
                     windowSize = WINDOW_SIZE,
-                    maxSpeechDuration = 20.0f,
+                    maxSpeechDuration = 6.0f,
                 ),
                 sampleRate = SAMPLE_RATE,
                 numThreads = 1,
@@ -141,6 +141,7 @@ class SherpaWhisperEngine(
         audioRecord?.startRecording()
         val buffer = ShortArray(WINDOW_SIZE)
         val localVad = vad ?: return
+
         while (keepRunning.get()) {
             val read = audioRecord?.read(buffer, 0, buffer.size) ?: break
             if (read <= 0) continue
@@ -151,7 +152,9 @@ class SherpaWhisperEngine(
                 localVad.pop()
                 val text = decodeSegment(segment.samples)
                 if (text.isNotBlank()) {
+                    Log.d(tag, "VAD segment decoded: '$text'")
                     _partialTranscript.value = text
+                    _transcript.value = ""
                     _transcript.value = text
                 }
             }
@@ -162,7 +165,9 @@ class SherpaWhisperEngine(
             localVad.pop()
             val text = decodeSegment(segment.samples)
             if (text.isNotBlank()) {
+                Log.d(tag, "VAD segment flushed: '$text'")
                 _partialTranscript.value = text
+                _transcript.value = ""
                 _transcript.value = text
             }
         }
